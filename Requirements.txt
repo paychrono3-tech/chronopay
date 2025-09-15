@@ -1,0 +1,6 @@
+flask
+qrcode
+opencv-python
+forex-python
+pillow
+gunicorn
