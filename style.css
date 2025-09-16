@@ -1,0 +1,14 @@
+/* General page styling */
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f7fa;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+/* Center content */
+.container {
+    width: 400px;
+    margin: 60px auto;
+    background:
