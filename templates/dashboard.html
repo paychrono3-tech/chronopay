@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><title>Dashboard</title></head>
+<body>
+  <h2>Welcome {{ username }}</h2>
+  <p><b>Balance:</b> {{ balance }}</p>
+
+  <h3>Your QR Code (others can scan to pay you):</h3>
+  <img src="{{ url_for('static', filename='qrcodes/' + username + '.png') }}" width="200">
+
+  <br><br>
+  <a href="/transfer">💸 Send Money</a><br>
+  <a href="/history">📜 Transaction History</a><br>
+  <a href="/logout">Logout</a>
+</body>
+</html>
