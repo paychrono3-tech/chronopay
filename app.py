@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, url_for
 import json, os, qrcode
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from forex_python.converter import CurrencyRates
 import cv2
 
@@ -163,6 +164,52 @@ def history():
 def logout():
     session.pop("username", None)
     return redirect("/")
+
+
+
+app = Flask(__name__)
+
+# Scan QR / Payment Route
+import json
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+# Load users from JSON
+def load_users():
+    with open("users.json", "r") as f:
+        return json.load(f)
+
+# Save users back to JSON
+def save_users(users):
+    with open("users.json", "w") as f:
+        json.dump(users, f, indent=4)
+
+@app.route("/scan_qr", methods=["GET", "POST"])
+def scan_qr():
+    if request.method == "POST":
+        sender = request.form.get("sender")
+        receiver = request.form.get("receiver")
+        amount = float(request.form.get("amount", 0))
+
+        users = load_users()
+
+        if sender not in users or receiver not in users:
+            return "❌ Sender or receiver not found!", 400
+
+        if users[sender]["balance"] < amount:
+            return "❌ Insufficient balance!", 400
+
+        # Update balances
+        users[sender]["balance"] -= amount
+        users[receiver]["balance"] += amount
+
+        save_users(users)
+
+        return f"✅ {sender} paid {amount} to {receiver} successfully!"
+
+    return render_template("scan_qr.html")
+
 
 
 # ----------------- Run App -----------------
