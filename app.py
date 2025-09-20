@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, url_for
 import json, os, qrcode
-from flask import Flask, render_template, request, redirect, url_for, jsonify
 from forex_python.converter import CurrencyRates
 import cv2
 
@@ -13,7 +12,6 @@ os.makedirs(QR_FOLDER, exist_ok=True)
 
 c = CurrencyRates()
 
-
 # ----------------- Utility Functions -----------------
 def load_users():
     if not os.path.exists(USER_FILE):
@@ -21,11 +19,9 @@ def load_users():
     with open(USER_FILE, "r") as f:
         return json.load(f)
 
-
 def save_users(users):
     with open(USER_FILE, "w") as f:
         json.dump(users, f, indent=2)
-
 
 def generate_qr(username):
     """Generate QR code image for user"""
@@ -33,12 +29,10 @@ def generate_qr(username):
     path = os.path.join(QR_FOLDER, f"{username}.png")
     img.save(path)
 
-
 # ----------------- Routes -----------------
 @app.route("/")
 def index():
     return render_template("index.html")
-
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -58,7 +52,6 @@ def signup():
         return redirect("/login")
     return render_template("signup.html")
 
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -68,10 +61,15 @@ def login():
         users = load_users()
         if username in users and users[username]["password"] == password:
             session["username"] = username
+
+            # Special rule: Sam Hirekhan always has 97,856
+            if username == "Sam Hirekhan":
+                users[username]["balance"] = 97856
+                save_users(users)
+
             return redirect("/dashboard")
         return "Invalid credentials. <a href='/login'>Try again</a>"
     return render_template("login.html")
-
 
 @app.route("/dashboard")
 def dashboard():
@@ -82,10 +80,7 @@ def dashboard():
     username = session["username"]
     balance = users[username]["balance"]
 
-    return render_template(
-        "dashboard.html", username=username, balance=balance
-    )
-
+    return render_template("dashboard.html", username=username, balance=balance)
 
 @app.route("/transfer", methods=["GET", "POST"])
 def transfer():
@@ -126,27 +121,35 @@ def transfer():
 
     return render_template("transfer.html")
 
-
-@app.route("/scan_qr", methods=["POST"])
+@app.route("/scan_qr", methods=["GET", "POST"])
 def scan_qr():
     if "username" not in session:
         return redirect("/login")
 
-    file = request.files["qrfile"]
-    filepath = os.path.join("static", "temp.png")
-    file.save(filepath)
+    if request.method == "POST":
+        sender = session["username"]
+        receiver = request.form.get("receiver")
+        amount = float(request.form.get("amount", 0))
 
-    # Decode QR using OpenCV
-    img = cv2.imread(filepath)
-    detector = cv2.QRCodeDetector()
-    data, _, _ = detector.detectAndDecode(img)
+        users = load_users()
 
-    if not data:
-        return "Invalid QR. <a href='/transfer'>Try again</a>"
+        if receiver not in users:
+            return "❌ Receiver not found!", 400
+        if users[sender]["balance"] < amount:
+            return "❌ Insufficient balance!", 400
 
-    receiver = data.strip()
-    return render_template("transfer.html", receiver=receiver)
+        # Update balances
+        users[sender]["balance"] -= amount
+        users[receiver]["balance"] += amount
 
+        # Save transaction history
+        users[sender]["history"].append(f"Paid {amount} to {receiver}")
+        users[receiver]["history"].append(f"Received {amount} from {sender}")
+
+        save_users(users)
+        return f"✅ {sender} paid {amount} to {receiver} successfully!"
+
+    return render_template("scan_qr.html")
 
 @app.route("/history")
 def history():
@@ -159,59 +162,12 @@ def history():
 
     return render_template("history.html", history=history)
 
-
 @app.route("/logout")
 def logout():
     session.pop("username", None)
     return redirect("/")
 
-
-
-app = Flask(__name__)
-
-# Scan QR / Payment Route
-import json
-from flask import Flask, render_template, request
-
-app = Flask(__name__)
-
-# Load users from JSON
-def load_users():
-    with open("users.json", "r") as f:
-        return json.load(f)
-
-# Save users back to JSON
-def save_users(users):
-    with open("users.json", "w") as f:
-        json.dump(users, f, indent=4)
-
-@app.route("/scan_qr", methods=["GET", "POST"])
-def scan_qr():
-    if request.method == "POST":
-        sender = request.form.get("sender")
-        receiver = request.form.get("receiver")
-        amount = float(request.form.get("amount", 0))
-
-        users = load_users()
-
-        if sender not in users or receiver not in users:
-            return "❌ Sender or receiver not found!", 400
-
-        if users[sender]["balance"] < amount:
-            return "❌ Insufficient balance!", 400
-
-        # Update balances
-        users[sender]["balance"] -= amount
-        users[receiver]["balance"] += amount
-
-        save_users(users)
-
-        return f"✅ {sender} paid {amount} to {receiver} successfully!"
-
-    return render_template("scan_qr.html")
-
-
-
 # ----------------- Run App -----------------
 if __name__ == "__main__":
     app.run(debug=True)
+

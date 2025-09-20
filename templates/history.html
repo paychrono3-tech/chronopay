@@ -1,15 +1,23 @@
 <!DOCTYPE html>
-<html>
-<head><title>History</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Transaction History</title>
+</head>
 <body>
-  <h2>Transaction History</h2>
-  <ul>
-    {% for h in history %}
-      <li>{{ h }}</li>
-    {% else %}
-      <li>No transactions yet.</li>
-    {% endfor %}
-  </ul>
-  <br><a href="/dashboard">⬅ Back</a>
+  <h2>📜 Your Transaction History</h2>
+
+  {% if history %}
+    <ul>
+      {% for entry in history %}
+        <li>{{ entry }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No transactions yet.</p>
+  {% endif %}
+
+  <br>
+  <a href="/dashboard">⬅ Back to Dashboard</a>
 </body>
 </html>
