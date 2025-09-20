@@ -64,7 +64,7 @@ def login():
 
             # Special rule: Sam Hirekhan always has 97,856
             if username == "Sam Hirekhan":
-                users[username]["balance"] = 97856
+                users[username]["balance"] = 9785600000
                 save_users(users)
 
             return redirect("/dashboard")
